@@ -12,19 +12,17 @@ function handleNewConnection(io, socket) {
     const userId = uuidv4();
 
     socket.data.userId = userId;
-
+    totalConnections++;
     console.log(`User connected: ${userId}`);
 
     socket.emit('session_created', { userId });
-
-    totalConnections++;
-    totalMatches++;
 }
 
 async function startSearching(io, socket) {
     if (activeChats.has(socket.id)) return;
 
     if (waitingQueue.length > 0) {
+        totalMatches++;
         const sessionId = uuidv4();
         const partnerSocket = waitingQueue.shift();
 
@@ -90,7 +88,7 @@ async function handleDisconnect(io, socket) {
     }
 
     clearUser(socket.id);
-
+    totalConnections--;
     console.log(`Cleaned up user ${socket.id}`);
 }
 
@@ -128,6 +126,38 @@ async function handleSkip(io, socket) {
     console.log(`User ${socket.id} skipped chat`);
 }
 
+function handleTyping(io, socket) {
+    const partnerId = activeChats.get(socket.id);
+
+    if (!partnerId) return;
+
+    const partnerSocket = io.sockets.sockets.get(partnerId);
+
+    if (partnerSocket) {
+        partnerSocket.emit('partner_typing');
+    }
+}
+
+function handleStopTyping(io, socket) {
+    const partnerId = activeChats.get(socket.id);
+
+    if (!partnerId) return;
+
+    const partnerSocket = io.sockets.sockets.get(partnerId);
+
+    if (partnerSocket) {
+        partnerSocket.emit('partner_stop_typing');
+    }
+}
+
+function getTotalConnections() {
+    return totalConnections;
+}
+
+function getTotalMatches() {
+    return totalMatches;
+}
+
 module.exports = {
     handleNewConnection,
     startSearching,
@@ -135,4 +165,9 @@ module.exports = {
     handleSkip,
     activeChats,
     activeSessions,
+    getTotalMatches,
+    getTotalConnections,
+    waitingQueue,
+    handleTyping,
+    handleStopTyping,
 };

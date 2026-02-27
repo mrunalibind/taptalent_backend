@@ -1,5 +1,5 @@
 const { Server } = require('socket.io');
-const { handleNewConnection, handleDisconnect, activeChats, handleSkip, startSearching, activeSessions } = require('./matchmaking');
+const { handleNewConnection, handleDisconnect, activeChats, handleSkip, startSearching, activeSessions, handleTyping, handleStopTyping } = require('./matchmaking');
 
 const { handleSendMessage } = require('./chatHandler');
 
@@ -25,6 +25,14 @@ const initSocket = (server) => {
 
     socket.on('send_message', async (message) => {
       await handleSendMessage(io, socket, message);
+    });
+
+    socket.on('typing', () => {
+        handleTyping(io, socket);
+    });
+
+    socket.on('stop_typing', () => {
+        handleStopTyping(io, socket);
     });
 
     socket.on('skip', async () => {
